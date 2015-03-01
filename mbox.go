@@ -12,10 +12,13 @@ import (
 	"net/mail"
 )
 
-var ErrInvalidMessage = errors.New("Invalid message")
+// ErrInvalidMboxFormat is the error returned by the Next method of type Mbox if
+// its content is malformed in a way that it is not possible to extract a
+// message.
+var ErrInvalidMboxFormat = errors.New("invalid mbox format")
 
 // scanMessage is a split function for a bufio.Scanner that returns a message in
-// RFC 822 format or an ErrInvalidMessage error.
+// RFC 822 format or an error.
 func scanMessage(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if len(data) == 0 && atEOF {
 		return 0, nil, nil
@@ -29,17 +32,17 @@ func scanMessage(data []byte, atEOF bool) (advance int, token []byte, err error)
 	}
 
 	if !bytes.HasPrefix(data, []byte("From ")) {
-		return 0, nil, ErrInvalidMessage
+		return 0, nil, ErrInvalidMboxFormat
 	}
 
 	n = bytes.IndexByte(data, '\n')
 	if n == -1 {
-		return 0, nil, ErrInvalidMessage
+		return 0, nil, ErrInvalidMboxFormat
 	}
 
 	if atEOF {
 		if data[len(data)-1] != '\n' {
-			return 0, nil, ErrInvalidMessage
+			return 0, nil, ErrInvalidMboxFormat
 		}
 
 		return len(data), data[n+1:], nil

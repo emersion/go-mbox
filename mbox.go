@@ -69,27 +69,18 @@ func scanMessage(data []byte, atEOF bool) (advance int, token []byte, err error)
 // occurs. When Next returns false, you can call the Err method to check for an
 // error.
 //
-// The Message method returns the current message as mail.Message, or nil if an
-// error occurs or if you have skipped past the last message using Next. You
-// cann call the Err method to check for an error.
+// The Message method returns the current message as *mail.Message, or nil if an
+// error occured while calling Next or if you have skipped past the last message
+// using Next. If Next returned true, you can expect Message to return a valid
+// *mail.Message.
 type Mbox struct {
 	s   *bufio.Scanner
 	m   *mail.Message
 	err error
 }
 
-// Mbox provides an interface to read a sequence of messages from an mbox.
-// Calling the Next method steps through the messages. The current message can
-// then be accessed by calling the Message method.
-//
-// The Next method returns true while there are messages to skip to and no error
-// occurs. When Next returns false, you can call the Err method to check for an
-// error.
-//
-// The Message method returns the current message as mail.Message, or nil if an
-// error occured while calling Next or if you have skipped past the last message
-// using Next. If Next returned true, you can expect Message to return a valid
-// *mail.Message.
+// New returns a new *Mbox to read messages from mbox file format data provided
+// by io.Reader r.
 func New(r io.Reader) *Mbox {
 	s := bufio.NewScanner(r)
 	s.Split(scanMessage)

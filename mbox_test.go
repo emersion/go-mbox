@@ -320,7 +320,7 @@ func testMboxMessage(t *testing.T, mbox string, count int) {
 			t.Errorf("Unexpected error reading message body: %v", err)
 		}
 		if i == 0 && body.String() != mboxFirstMessageBody {
-			t.Errorf("Unexpected body", body.String())
+			t.Errorf("Unexpected body: %q", body.String())
 		}
 		if i == 1 && msg.Header.Get("Subject") != mboxSecondMessageSubjectHeader {
 			t.Errorf("Unexpected subject header: %q", msg.Header.Get("Subject"))

@@ -4,7 +4,7 @@
 // think this stuff is worth it, you can buy me a beer in return.
 //                                                             Tobias Rehbein
 
-// Package mbox parses mbox files into messages.
+// Package mbox parses the mbox file format into messages.
 //
 // As the mbox file format is not standardized this package expects the least
 // common denominator, the so called mboxo format.
@@ -78,8 +78,18 @@ type Mbox struct {
 	err error
 }
 
-// New returns a new Mbox to read messages from r, which is expected to be an
-// io.Reader on a mbox.
+// Mbox provides an interface to read a sequence of messages from an mbox.
+// Calling the Next method steps through the messages. The current message can
+// then be accessed by calling the Message method.
+//
+// The Next method returns true while there are messages to skip to and no error
+// occurs. When Next returns false, you can call the Err method to check for an
+// error.
+//
+// The Message method returns the current message as mail.Message, or nil if an
+// error occured while calling Next or if you have skipped past the last message
+// using Next. If Next returned true, you can expect Message to return a valid
+// *mail.Message.
 func New(r io.Reader) *Mbox {
 	s := bufio.NewScanner(r)
 	s.Split(scanMessage)
@@ -110,13 +120,16 @@ func (m *Mbox) Next() bool {
 	return true
 }
 
-// Err returns the first error that occured while calling Next or Message.
+// Err returns the first error that occured while calling Next.
 func (m *Mbox) Err() error {
 	return m.err
 }
 
-// Message returns the current message or nil if you skipped the past message or
-// an error orccured while calling the Next method.
+// Message returns the current message. It returns nil if you never called Next,
+// skipped past the last message or if an error occured during a call to Next.
+//
+// If Next returned true, you can expect Message to return a valid
+// *mail.Message.
 func (m *Mbox) Message() *mail.Message {
 	if m.err != nil {
 		return nil

@@ -4,10 +4,6 @@
 // think this stuff is worth it, you can buy me a beer in return.
 //                                                             Tobias Rehbein
 
-// Package mbox parses the mbox file format into messages.
-//
-// As the mbox file format is not standardized this package expects the least
-// common denominator, the so called mboxo format.
 package mbox
 
 import (
@@ -61,7 +57,7 @@ func scanMessage(data []byte, atEOF bool) (advance int, token []byte, err error)
 	return e + 1, data[n+1 : e], nil
 }
 
-// Reader provides an interface to read a sequence of messages from an mbox.
+// Scanner provides an interface to read a sequence of messages from an mbox.
 // Calling the Next method steps through the messages. The current message can
 // then be accessed by calling the Message method.
 //

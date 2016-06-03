@@ -385,7 +385,7 @@ func TestMboxMessageWithOneMessageMissingHeaders(t *testing.T) {
 	testMboxMessageInvalid(t, mboxWithOneMessageMissingHeaders)
 }
 
-func ExampleMbox() {
+func ExampleScanner() {
 	r := strings.NewReader(`From herp.derp at example.com  Thu Jan  1 00:00:01 2015
 From: herp.derp at example.com (Herp Derp)
 Date: Thu, 01 Jan 2015 00:00:01 +0100

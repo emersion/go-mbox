@@ -300,7 +300,7 @@ func TestScanMessageMboxWithOneMessageWithoutNewlineAtEOF(t *testing.T) {
 
 func testMboxMessage(t *testing.T, mbox string, count int) {
 	b := bytes.NewBufferString(mbox)
-	m := New(b)
+	m := NewScanner(b)
 
 	for i := 0; i < count; i++ {
 		if !m.Next() {
@@ -358,7 +358,7 @@ func TestMboxMessageWithThreeMessagesMalformedButValid(t *testing.T) {
 
 func testMboxMessageInvalid(t *testing.T, mbox string) {
 	b := bytes.NewBufferString(mbox)
-	m := New(b)
+	m := NewScanner(b)
 
 	if m.Next() {
 		t.Errorf("Next() succeeded")
@@ -405,7 +405,7 @@ This is another simple test.
 Bye.
 `)
 
-	mbox := New(r)
+	mbox := NewScanner(r)
 	for mbox.Next() {
 		// If Next() returns true, you can expect Message() to return a
 		// valid *mail.Message.

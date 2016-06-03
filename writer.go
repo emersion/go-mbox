@@ -8,8 +8,10 @@ package mbox
 
 import (
 	"io"
+	"io/ioutil"
 	"net/mail"
 	"net/textproto"
+	"strings"
 	"time"
 )
 
@@ -68,8 +70,16 @@ func (w *Writer) Write(m *mail.Message) (N int, err error) {
 		return
 	}
 
-	nn, err := io.Copy(w.w, m.Body)
-	N += int(nn)
+	// Escape lines begining with "From "
+	// TODO: use golang.org/x/text/transform
+	b, err := ioutil.ReadAll(m.Body)
+	if err != nil {
+		return
+	}
+
+	r := strings.NewReplacer("\nFrom ", "\n>From ")
+	n, err = r.WriteString(w.w, string(b))
+	N += n
 	if err != nil {
 		return
 	}

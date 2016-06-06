@@ -84,7 +84,7 @@ func (w *Writer) WriteMessage(m *mail.Message) (N int, err error) {
 		return
 	}
 
-	n, err = io.WriteString(w.w, "\n")
+	n, err = io.WriteString(w.w, "\n\n")
 	N += n
 	return
 }

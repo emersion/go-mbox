@@ -56,6 +56,7 @@ And, by the way, this is how a "From" line is escaped in mboxo format:
 >From Herp Derp with love.
 
 Bye.
+
 From ???@??? Fri Jan  2 00:00:01 2015
 Date: Thu, 02 Jan 2015 00:00:01 +0100
 
@@ -64,6 +65,7 @@ This is another simple test.
 Another line.
 
 Bye.
+
 `
 
 	s := testWriter(t, messages)

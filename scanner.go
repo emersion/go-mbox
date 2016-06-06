@@ -75,8 +75,8 @@ type Scanner struct {
 	err error
 }
 
-// New returns a new *Scanner to read messages from mbox file format data provided
-// by io.Reader r.
+// NewScanner returns a new *Scanner to read messages from mbox file format data
+// provided by io.Reader r.
 func NewScanner(r io.Reader) *Scanner {
 	s := bufio.NewScanner(r)
 	s.Split(scanMessage)

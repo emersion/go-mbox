@@ -21,7 +21,7 @@ func writeMIMEHeader(w io.Writer, header textproto.MIMEHeader) (N int, err error
 
 	for name, values := range header {
 		for _, value := range values {
-			n, err = io.WriteString(w, name + ": " + value + "\n")
+			n, err = io.WriteString(w, name + ": " + value + "\r\n")
 			N += n
 			if err != nil {
 				return
@@ -29,7 +29,7 @@ func writeMIMEHeader(w io.Writer, header textproto.MIMEHeader) (N int, err error
 		}
 	}
 
-	n, err = io.WriteString(w, "\n")
+	n, err = io.WriteString(w, "\r\n")
 	N += n
 	return
 }
@@ -57,7 +57,7 @@ func (w *Writer) WriteMessage(m *mail.Message) (N int, err error) {
 		date = t.Format(time.ANSIC)
 	}
 
-	line := "From " + from + " " + date + "\n"
+	line := "From " + from + " " + date + "\r\n"
 	n, err := io.WriteString(w.w, line)
 	N += n
 	if err != nil {
@@ -84,7 +84,7 @@ func (w *Writer) WriteMessage(m *mail.Message) (N int, err error) {
 		return
 	}
 
-	n, err = io.WriteString(w.w, "\n\n")
+	n, err = io.WriteString(w.w, "\r\n\r\n")
 	N += n
 	return
 }

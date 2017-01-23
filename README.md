@@ -14,7 +14,6 @@ documentation.
 Alternatives
 ------------
 * github.com/sam-falvo/mbox
-* github.com/bthomson/mbox
 
 Both packages provide ways to parse the mbox file format. After looking at the
 code of both packages I decided to roll my own variant, leveraging the standard

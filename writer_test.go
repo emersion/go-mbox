@@ -46,26 +46,26 @@ Bye.`),
 		},
 	}
 
-	expected := `From ???@??? Thu Jan  1 00:00:01 2015`+"\r"+`
-Date: Thu, 01 Jan 2015 00:00:01 +0100`+"\r"+`
-`+"\r"+`
+	expected := `From ???@??? Thu Jan  1 00:00:01 2015` + "\r" + `
+Date: Thu, 01 Jan 2015 00:00:01 +0100` + "\r" + `
+` + "\r" + `
 This is a simple test.
 
 And, by the way, this is how a "From" line is escaped in mboxo format:
 
 >From Herp Derp with love.
 
-Bye.`+"\r"+`
-`+"\r"+`
-From ???@??? Fri Jan  2 00:00:01 2015`+"\r"+`
-Date: Thu, 02 Jan 2015 00:00:01 +0100`+"\r"+`
-`+"\r"+`
+Bye.` + "\r" + `
+` + "\r" + `
+From ???@??? Fri Jan  2 00:00:01 2015` + "\r" + `
+Date: Thu, 02 Jan 2015 00:00:01 +0100` + "\r" + `
+` + "\r" + `
 This is another simple test.
 
 Another line.
 
-Bye.`+"\r"+`
-`+"\r"+`
+Bye.` + "\r" + `
+` + "\r" + `
 `
 
 	s := testWriter(t, messages)

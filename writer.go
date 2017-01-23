@@ -21,7 +21,7 @@ func writeMIMEHeader(w io.Writer, header textproto.MIMEHeader) (N int, err error
 
 	for name, values := range header {
 		for _, value := range values {
-			n, err = io.WriteString(w, name + ": " + value + "\r\n")
+			n, err = io.WriteString(w, name+": "+value+"\r\n")
 			N += n
 			if err != nil {
 				return

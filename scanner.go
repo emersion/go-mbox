@@ -125,7 +125,6 @@ func (m *Scanner) Message() *mail.Message {
 	return m.m
 }
 
-
 // Buffer sets the initial buffer to use when scanning and the maximum size of
 // buffer that may be allocated during scanning.
 //

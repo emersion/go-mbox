@@ -4,7 +4,8 @@ mbox
 [![Coverage Status](https://coveralls.io/repos/blabber/mbox/badge.svg)](https://coveralls.io/r/blabber/mbox)
 [![GoDoc](https://godoc.org/github.com/blabber/mbox?status.svg)](https://godoc.org/github.com/blabber/mbox)
 
-Package mbox parses the mbox file format into messages and formats messages into mbox files.
+Package mbox parses the mbox file format into messages and formats messages into
+mbox files.
 
 Documentation
 -------------
@@ -14,7 +15,7 @@ documentation.
 Alternatives
 ------------
 * github.com/sam-falvo/mbox
-* github.com/bthomson/mbox
+* ~~ github.com/bthomson/mbox ~~
 
 Both packages provide ways to parse the mbox file format. After looking at the
 code of both packages I decided to roll my own variant, leveraging the standard

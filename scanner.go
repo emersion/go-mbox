@@ -79,6 +79,8 @@ type Scanner struct {
 // provided by io.Reader r.
 func NewScanner(r io.Reader) *Scanner {
 	s := bufio.NewScanner(r)
+	buf := make([]byte, 0, 64*1024)
+	s.Buffer(buf, 1024*1024*100)
 	s.Split(scanMessage)
 
 	return &Scanner{s, nil, nil}

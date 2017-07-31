@@ -65,6 +65,41 @@ This is the last simple test.
 Bye.
 `
 
+const mboxWithStartingLF = `
+From herp.derp at example.com  Thu Jan  1 00:00:01 2015
+From: herp.derp at example.com (Herp Derp)
+Date: Thu, 01 Jan 2015 00:00:01 +0100
+Subject: Test
+
+This is a simple test.
+
+And, by the way, this is how a "From" line is escaped in mboxo format:
+
+>From Herp Derp with love.
+
+Bye.
+
+From derp.herp at example.com  Thu Jan  1 00:00:01 2015
+From: derp.herp at example.com (Derp Herp)
+Date: Thu, 02 Jan 2015 00:00:01 +0100
+Subject: Another test
+
+This is another simple test.
+
+Another line.
+
+Bye.
+
+From bernd.lauert at example.com  Thu Jan  3 00:00:01 2015
+From: bernd.lauert at example.com (Bernd Lauert)
+Date: Thu, 03 Jan 2015 00:00:01 +0100
+Subject: A last test
+
+This is the last simple test.
+
+Bye.
+`
+
 const mboxWithThreeMessagesMalformedButValid = `From herp.derp at example.com  Thu Jan  1 00:00:01 2015
 From: herp.derp at example.com (Herp Derp)
 Date: Thu, 01 Jan 2015 00:00:01 +0100
@@ -313,6 +348,7 @@ func testMboxMessage(t *testing.T, mbox string, count int) {
 		msg := m.Message()
 		if msg == nil {
 			t.Errorf("message is nil; pass %d", i)
+			continue
 		}
 		body := new(bytes.Buffer)
 		_, err := body.ReadFrom(msg.Body)
@@ -320,7 +356,7 @@ func testMboxMessage(t *testing.T, mbox string, count int) {
 			t.Errorf("Unexpected error reading message body: %v", err)
 		}
 		if i == 0 && body.String() != mboxFirstMessageBody {
-			t.Errorf("Unexpected body: %q", body.String())
+			t.Errorf("Expected:\n %q\ngot\n%q", mboxFirstMessageBody, body.String())
 		}
 		if i == 1 && msg.Header.Get("Subject") != mboxSecondMessageSubjectHeader {
 			t.Errorf("Unexpected subject header: %q", msg.Header.Get("Subject"))
@@ -350,6 +386,10 @@ func TestMboxMessageWithOneMessage(t *testing.T) {
 
 func TestMboxMessageWithThreeMessages(t *testing.T) {
 	testMboxMessage(t, mboxWithThreeMessages, 3)
+}
+
+func TestMboxMessageWithStartingLF(t *testing.T) {
+	testMboxMessage(t, mboxWithStartingLF, 3)
 }
 
 func TestMboxMessageWithThreeMessagesMalformedButValid(t *testing.T) {

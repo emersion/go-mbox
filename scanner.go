@@ -21,40 +21,43 @@ var ErrInvalidMboxFormat = errors.New("invalid mbox format")
 
 // scanMessage is a split function for a bufio.Scanner that returns a message in
 // RFC 822 format or an error.
-func scanMessage(data []byte, atEOF bool) (advance int, token []byte, err error) {
+func scanMessage(data []byte, atEOF bool) (int, []byte, error) {
 	if len(data) == 0 && atEOF {
 		return 0, nil, nil
 	}
 
 	var n int
 	e := bytes.Index(data, []byte("\nFrom "))
+	advanceExtra := 0
+	if e == 0 {
+		data = data[1:] // advance past the leading LF
+		advanceExtra = 1
+		e = bytes.Index(data, []byte("\nFrom "))
+	}
 	if e == -1 && !atEOF {
 		// request more data
-		return 0, nil, nil
+		return advanceExtra, nil, nil
 	}
 
 	if !bytes.HasPrefix(data, []byte("From ")) {
-		return 0, nil, ErrInvalidMboxFormat
+		return advanceExtra, nil, ErrInvalidMboxFormat
 	}
-
 	n = bytes.IndexByte(data, '\n')
 	if n == -1 {
-		return 0, nil, ErrInvalidMboxFormat
+		return advanceExtra, nil, ErrInvalidMboxFormat
 	}
 
 	if atEOF {
 		if data[len(data)-1] != '\n' {
-			return 0, nil, ErrInvalidMboxFormat
+			return advanceExtra, nil, ErrInvalidMboxFormat
 		}
-
-		return len(data), data[n+1:], nil
+		return len(data) + advanceExtra, data[n+1:], nil
 	}
 
 	if data[e-1] != '\n' {
-		return e + 1, data[n+1 : e+1], nil
+		return e + 1 + advanceExtra, data[n+1 : e+1], nil
 	}
-
-	return e + 1, data[n+1 : e], nil
+	return e + 1 + advanceExtra, data[n+1 : e], nil
 }
 
 // Scanner provides an interface to read a sequence of messages from an mbox.

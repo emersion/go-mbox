@@ -34,6 +34,25 @@ func scanMessage(data []byte, atEOF bool) (int, []byte, error) {
 		advanceExtra = 1
 		e = bytes.Index(data, []byte("\nFrom "))
 	}
+	if e > 0 {
+		if ctStart := bytes.Index(data[:e+1], []byte(boundarySep)); ctStart != -1 {
+			if ctEnd := bytes.Index(data[ctStart+len(boundarySep):], []byte("\"")); ctEnd != -1 {
+				//log.Printf("ctStart = %d, ctEnd = %d", ctStart, ctEnd)
+				boundary := []byte("\n--" + string(data[ctStart+len(boundarySep):ctStart+len(boundarySep)+ctEnd]) + "--\n")
+				//log.Printf("Looking for boundary -- %q", boundary)
+				if boundEnd := bytes.Index(data, boundary); boundEnd == -1 {
+					//log.Printf("Asking for more!")
+					return 0, nil, nil // ask for more!  We don't see the end boundary yet
+				} else {
+					e = bytes.Index(data[boundEnd:], []byte("\nFrom "))
+					if e != -1 {
+						e += boundEnd
+					}
+					//log.Printf("oldE = %d, newE = %d", oldE, e)
+				}
+			}
+		}
+	}
 	if e == -1 && !atEOF {
 		// request more data
 		return advanceExtra, nil, nil
@@ -53,12 +72,13 @@ func scanMessage(data []byte, atEOF bool) (int, []byte, error) {
 		}
 		return len(data) + advanceExtra, data[n+1:], nil
 	}
-
 	if data[e-1] != '\n' {
 		return e + 1 + advanceExtra, data[n+1 : e+1], nil
 	}
 	return e + 1 + advanceExtra, data[n+1 : e], nil
 }
+
+const boundarySep = "Content-Type: multipart/alternative; boundary=\""
 
 // Scanner provides an interface to read a sequence of messages from an mbox.
 // Calling the Next method steps through the messages. The current message can

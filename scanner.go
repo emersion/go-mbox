@@ -12,6 +12,8 @@ import (
 	"errors"
 	"io"
 	"net/mail"
+	"net/textproto"
+	"strings"
 )
 
 // ErrInvalidMboxFormat is the error returned by the Next method of type Mbox if
@@ -21,40 +23,69 @@ var ErrInvalidMboxFormat = errors.New("invalid mbox format")
 
 // scanMessage is a split function for a bufio.Scanner that returns a message in
 // RFC 822 format or an error.
-func scanMessage(data []byte, atEOF bool) (advance int, token []byte, err error) {
+func scanMessage(data []byte, atEOF bool) (int, []byte, error) {
 	if len(data) == 0 && atEOF {
 		return 0, nil, nil
 	}
 
 	var n int
 	e := bytes.Index(data, []byte("\nFrom "))
+	advanceExtra := 0
+	if e == 0 {
+		data = data[1:] // advance past the leading LF
+		advanceExtra = 1
+		e = bytes.Index(data, []byte("\nFrom "))
+	}
 	if e == -1 && !atEOF {
 		// request more data
-		return 0, nil, nil
+		return advanceExtra, nil, nil
 	}
 
 	if !bytes.HasPrefix(data, []byte("From ")) {
-		return 0, nil, ErrInvalidMboxFormat
+		return advanceExtra, nil, ErrInvalidMboxFormat
 	}
-
 	n = bytes.IndexByte(data, '\n')
 	if n == -1 {
-		return 0, nil, ErrInvalidMboxFormat
+		return advanceExtra, nil, ErrInvalidMboxFormat
 	}
 
 	if atEOF {
 		if data[len(data)-1] != '\n' {
-			return 0, nil, ErrInvalidMboxFormat
+			return advanceExtra, nil, ErrInvalidMboxFormat
 		}
-
-		return len(data), data[n+1:], nil
+		return len(data) + advanceExtra, data[n+1:], nil
 	}
-
+	tpr := textproto.NewReader(bufio.NewReader(bytes.NewReader(data[n+1:])))
+	header, err := tpr.ReadMIMEHeader()
+	if err != nil {
+		return 0, nil, err
+	}
+	cth := header.Get("Content-Type")
+	boundaryEnd := ""
+	if strings.Contains(cth, "multipart") {
+		splt := strings.Split(cth, "; ")
+		for _, v := range splt {
+			if strings.HasPrefix(v, "boundary=") {
+				c := strings.Index(v, "=") + 1
+				boundaryEnd = "--" + strings.Trim(v[c:], `"'`) + "--"
+				break
+			}
+		}
+	}
+	if boundaryEnd != "" {
+		b := bytes.Index(data, []byte(boundaryEnd))
+		if b == -1 {
+			return 0, nil, nil // need more data!
+		}
+		if e < b {
+			e = bytes.Index(data[b:], []byte("\nFrom "))
+			e += b
+		}
+	}
 	if data[e-1] != '\n' {
-		return e + 1, data[n+1 : e+1], nil
+		return e + 1 + advanceExtra, data[n+1 : e+1], nil
 	}
-
-	return e + 1, data[n+1 : e], nil
+	return e + 1 + advanceExtra, data[n+1 : e], nil
 }
 
 // Scanner provides an interface to read a sequence of messages from an mbox.

@@ -65,6 +65,41 @@ This is the last simple test.
 Bye.
 `
 
+const mboxWithStartingLF = `
+From herp.derp at example.com  Thu Jan  1 00:00:01 2015
+From: herp.derp at example.com (Herp Derp)
+Date: Thu, 01 Jan 2015 00:00:01 +0100
+Subject: Test
+
+This is a simple test.
+
+And, by the way, this is how a "From" line is escaped in mboxo format:
+
+>From Herp Derp with love.
+
+Bye.
+
+From derp.herp at example.com  Thu Jan  1 00:00:01 2015
+From: derp.herp at example.com (Derp Herp)
+Date: Thu, 02 Jan 2015 00:00:01 +0100
+Subject: Another test
+
+This is another simple test.
+
+Another line.
+
+Bye.
+
+From bernd.lauert at example.com  Thu Jan  3 00:00:01 2015
+From: bernd.lauert at example.com (Bernd Lauert)
+Date: Thu, 03 Jan 2015 00:00:01 +0100
+Subject: A last test
+
+This is the last simple test.
+
+Bye.
+`
+
 const mboxWithThreeMessagesMalformedButValid = `From herp.derp at example.com  Thu Jan  1 00:00:01 2015
 From: herp.derp at example.com (Herp Derp)
 Date: Thu, 01 Jan 2015 00:00:01 +0100
@@ -313,6 +348,7 @@ func testMboxMessage(t *testing.T, mbox string, count int) {
 		msg := m.Message()
 		if msg == nil {
 			t.Errorf("message is nil; pass %d", i)
+			continue
 		}
 		body := new(bytes.Buffer)
 		_, err := body.ReadFrom(msg.Body)
@@ -320,7 +356,7 @@ func testMboxMessage(t *testing.T, mbox string, count int) {
 			t.Errorf("Unexpected error reading message body: %v", err)
 		}
 		if i == 0 && body.String() != mboxFirstMessageBody {
-			t.Errorf("Unexpected body: %q", body.String())
+			t.Errorf("Expected:\n %q\ngot\n%q", mboxFirstMessageBody, body.String())
 		}
 		if i == 1 && msg.Header.Get("Subject") != mboxSecondMessageSubjectHeader {
 			t.Errorf("Unexpected subject header: %q", msg.Header.Get("Subject"))
@@ -350,6 +386,10 @@ func TestMboxMessageWithOneMessage(t *testing.T) {
 
 func TestMboxMessageWithThreeMessages(t *testing.T) {
 	testMboxMessage(t, mboxWithThreeMessages, 3)
+}
+
+func TestMboxMessageWithStartingLF(t *testing.T) {
+	testMboxMessage(t, mboxWithStartingLF, 3)
 }
 
 func TestMboxMessageWithThreeMessagesMalformedButValid(t *testing.T) {
@@ -383,6 +423,150 @@ func TestMboxMessageWithOneMessageMissingSeparator(t *testing.T) {
 
 func TestMboxMessageWithOneMessageMissingHeaders(t *testing.T) {
 	testMboxMessageInvalid(t, mboxWithOneMessageMissingHeaders)
+}
+
+func TestScanMessageWithBoundaries(t *testing.T) {
+	sourceData := `
+From one place.
+From: herp.derp at example.com (Herp Derp)
+Date: Thu, 01 Jan 2015 00:00:01 +0100
+Subject: Test
+Content-Type: multipart/alternative;
+        boundary=Apple-Mail-D55D9B1A-A379-4D5C-BDA9-00D35DF424A0
+
+This is a test of boundaries.  Don't accept a new email via \nFrom until the boundary is done!'
+
+And, by the way, this is how a "From" line is escaped in mboxo format:
+From Herp Derp with love.
+
+From Herp Derp with love.
+
+Bye.
+--Apple-Mail-D55D9B1A-A379-4D5C-BDA9-00D35DF424A0--
+
+From another!
+From: herp.derp at example.com (Herp Derp)
+Date: Thu, 01 Jan 2015 00:00:01 +0100
+Subject: Test
+
+This is the second email in a test of boundaries.
+`
+	expected := []string{
+		"This is a test of boundaries.  Don't accept a new email via \\nFrom until the boundary is done!'\n\nAnd, by the way, this is how a \"From\" line is escaped in mboxo format:\nFrom Herp Derp with love.\n\nFrom Herp Derp with love.\n\nBye.\n--Apple-Mail-D55D9B1A-A379-4D5C-BDA9-00D35DF424A0--\n",
+		"This is the second email in a test of boundaries.\n",
+	}
+	b := bytes.NewBufferString(sourceData)
+	m := NewScanner(b)
+
+	for i := range expected {
+		if !m.Next() {
+			t.Errorf("Next() failed; pass %d", i)
+		}
+		if m.Err() != nil {
+			t.Errorf("Unexpected error after Next(): %v", m.Err())
+		}
+
+		msg := m.Message()
+		if msg == nil {
+			t.Errorf("message is nil; pass %d", i)
+			continue
+		}
+		body := new(bytes.Buffer)
+		_, err := body.ReadFrom(msg.Body)
+		if err != nil {
+			t.Errorf("%d - Unexpected error reading message body: %v", i, err)
+			continue
+		}
+		if body.String() != expected[i] {
+			t.Errorf("%d - Expected:\n %q\ngot\n%q", i, expected[i], body.String())
+		}
+		if m.Err() != nil {
+			t.Errorf("%d - Unexpected error after Message(): %v", i, m.Err())
+		}
+	}
+
+	if m.Next() {
+		t.Errorf("Next() succeeded")
+	}
+	if m.Err() != nil {
+		t.Errorf("Unexpected error after Next(): %v", m.Err())
+	}
+	if msg := m.Message(); msg != nil {
+		t.Errorf("message is not nil")
+	}
+	if m.Err() != nil {
+		t.Errorf("Unexpected error after Message(): %v", m.Err())
+	}
+}
+
+func TestScanMessageWithTextBoundary(t *testing.T) {
+	sourceData := `
+From one place.
+From: herp.derp at example.com (Herp Derp)
+Date: Thu, 01 Jan 2015 00:00:01 +0100
+Subject: Test
+Content-Type: text/html; charset="utf-8";
+ boundary="monkey_d3df4dc8-da5e-47dd-be15-f19c5ed55194"
+
+This is a test of boundaries.  Don't accept a new email via \nFrom until the boundary is done!'
+
+And, by the way, this is how a "From" line is escaped in mboxo format:
+
+Bye.
+
+From another!
+From: herp.derp at example.com (Herp Derp)
+Date: Thu, 01 Jan 2015 00:00:01 +0100
+Subject: Test
+
+This is the second email in a test of boundaries.
+`
+	expected := []string{
+		"This is a test of boundaries.  Don't accept a new email via \\nFrom until the boundary is done!'\n\nAnd, by the way, this is how a \"From\" line is escaped in mboxo format:\n\nBye.\n",
+		"This is the second email in a test of boundaries.\n",
+	}
+	b := bytes.NewBufferString(sourceData)
+	m := NewScanner(b)
+
+	for i := range expected {
+		if !m.Next() {
+			t.Errorf("Next() failed; pass %d", i)
+		}
+		if m.Err() != nil {
+			t.Errorf("Unexpected error after Next(): %v", m.Err())
+		}
+
+		msg := m.Message()
+		if msg == nil {
+			t.Errorf("message is nil; pass %d", i)
+			continue
+		}
+		body := new(bytes.Buffer)
+		_, err := body.ReadFrom(msg.Body)
+		if err != nil {
+			t.Errorf("%d - Unexpected error reading message body: %v", i, err)
+			continue
+		}
+		if body.String() != expected[i] {
+			t.Errorf("%d - Expected:\n %q\ngot\n%q", i, expected[i], body.String())
+		}
+		if m.Err() != nil {
+			t.Errorf("%d - Unexpected error after Message(): %v", i, m.Err())
+		}
+	}
+
+	if m.Next() {
+		t.Errorf("Next() succeeded")
+	}
+	if m.Err() != nil {
+		t.Errorf("Unexpected error after Next(): %v", m.Err())
+	}
+	if msg := m.Message(); msg != nil {
+		t.Errorf("message is not nil")
+	}
+	if m.Err() != nil {
+		t.Errorf("Unexpected error after Message(): %v", m.Err())
+	}
 }
 
 func ExampleScanner() {

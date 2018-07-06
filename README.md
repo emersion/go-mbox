@@ -6,6 +6,10 @@ mbox
 Package mbox parses the mbox file format into messages and formats messages into
 mbox files.
 
+TODO
+----
+Curently there is no clean way to delete messages.
+
 Documentation
 -------------
 Please refer to [GoDoc](https://godoc.org/github.com/blabber/mbox) for the API

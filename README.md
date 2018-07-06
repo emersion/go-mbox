@@ -11,6 +11,29 @@ Documentation
 Please refer to [GoDoc](https://godoc.org/github.com/blabber/mbox) for the API
 documentation.
 
+Notes
+-----
+This package does not provide advanced mbox manipulation functionalities, like
+deleting, searching, etc.
+
+If you get a `bufio.Scanner: token too long` error, you need to increase the
+buffer size of the scanner. To double the buffer size you'd do something like
+this:
+
+    s := mbox.NewScanner(...)
+    
+    bufsize := 2*bufio.MaxScanTokenSize
+    buf := make([]byte, bufsize)
+    s.Buffer(buf, bufsize)
+
+Maintainers Note
+----------------
+This project is in maintenance mode. I am not actively working on this package
+any more, but I am responding to issues and merge the occasional pull request.
+If you miss any functionality, feel free to send pull requests.
+
+If you are interested in taking over this package, ping me.
+
 Alternatives
 ------------
 * github.com/sam-falvo/mbox

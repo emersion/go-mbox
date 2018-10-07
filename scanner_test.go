@@ -569,6 +569,71 @@ This is the second email in a test of boundaries.
 	}
 }
 
+func TestScanMessageWithBoundarySemicolon(t *testing.T) {
+	mbox := `From notifications@github.com Tue Jun  7 05:46:46 2016
+From: Sender <notifications@github.com>
+To: foo/bar <bar@noreply.github.com>
+Message-ID: <foo/bar/1/0@github.com>
+Subject: Re: [foo/bar] [question] Baz? (#1)
+Content-Type: multipart/alternative; boundary="--==_mimepart_5755da228145a_38da3facdf97329c42987b";
+MIME-Version: 1.0
+
+
+----==_mimepart_5755da228145a_38da3facdf97329c42987b
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+
+Blah blah
+
+----==_mimepart_5755da228145a_38da3facdf97329c42987b
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<p>Blah blah</p>
+
+----==_mimepart_5755da228145a_38da3facdf97329c42987b--
+
+From notifications@github.com Tue Jun  7 05:52:15 2016
+From: Author <notifications@github.com>
+To: frob/blab <blab@noreply.github.com>
+Message-ID: <frob/blab/1/0@github.com>
+Subject: Re: [frob/blab] [question] Bling? (#1)
+Content-Type: multipart/alternative; boundary="--==_mimepart_5755db739a819_79783f996b0172c04025ee";
+MIME-Version: 1.0
+
+
+----==_mimepart_5755db739a819_79783f996b0172c04025ee
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+
+Blah blah
+
+----==_mimepart_5755db739a819_79783f996b0172c04025ee
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<p>Blah blah</p>
+
+----==_mimepart_5755db739a819_79783f996b0172c04025ee--
+
+`
+	expected := 2
+
+	b := bytes.NewBufferString(mbox)
+	m := NewScanner(b)
+
+	parsedMessages := 0
+	for m.Next() {
+		parsedMessages += 1
+	}
+
+	if parsedMessages != expected {
+		t.Errorf("Expected: %d; got: %d", expected, parsedMessages)
+	}
+}
+
 func ExampleScanner() {
 	r := strings.NewReader(`From herp.derp at example.com  Thu Jan  1 00:00:01 2015
 From: herp.derp at example.com (Herp Derp)

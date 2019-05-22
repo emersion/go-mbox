@@ -119,11 +119,3 @@ func (m *Reader) NextMessage() (io.Reader, error) {
 
 	return bytes.NewReader(m.s.Bytes()), nil
 }
-
-// Buffer sets the initial buffer to use when scanning and the maximum size of
-// buffer that may be allocated during scanning.
-//
-// Buffer panics if it is called after scanning has started.
-func (m *Reader) Buffer(buf []byte, max int) {
-	m.s.Buffer(buf, max)
-}

@@ -2,53 +2,72 @@ package mbox
 
 import (
 	"bytes"
-	"net/mail"
+	"io"
 	"strings"
 	"testing"
+	"time"
 )
 
-func testWriter(t *testing.T, messages []*mail.Message) string {
-	b := &bytes.Buffer{}
-	w := NewWriter(b)
+type testMessage struct {
+	date string
+	text string
+}
+
+func testWriter(t *testing.T, messages []testMessage) string {
+	var b bytes.Buffer
+	wc := NewWriter(&b)
 
 	for _, m := range messages {
-		if _, err := w.WriteMessage(m); err != nil {
+		r := strings.NewReader(m.text)
+		date, _ := time.Parse(time.RFC1123Z, m.date)
+
+		mw, err := wc.CreateMessage("", date)
+		if err != nil {
 			t.Fatal(err)
 		}
+
+		_, err = io.Copy(mw, r)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := wc.Close(); err != nil {
+		t.Fatal(err)
 	}
 
 	return b.String()
 }
 
 func TestWriter(t *testing.T) {
-	messages := []*mail.Message{
-		&mail.Message{
-			Header: map[string][]string{
-				"Date": {"Thu, 01 Jan 2015 00:00:01 +0100"},
-			},
-			Body: strings.NewReader(`This is a simple test.
+	messages := []testMessage{
+		{
+			"Thu, 01 Jan 2015 00:00:01 +0100",
+			`Date: Thu, 01 Jan 2015 00:00:01 +0100
+
+This is a simple test.
 
 And, by the way, this is how a "From" line is escaped in mboxo format:
 
 From Herp Derp with love.
 
-Bye.`),
+Bye.`,
 		},
-		&mail.Message{
-			Header: map[string][]string{
-				"Date": {"Thu, 02 Jan 2015 00:00:01 +0100"},
-			},
-			Body: strings.NewReader(`This is another simple test.
+		{
+			"Thu, 02 Jan 2015 00:00:01 +0100",
+			`Date: Thu, 02 Jan 2015 00:00:01 +0100
+
+This is another simple test.
 
 Another line.
 
-Bye.`),
+Bye.`,
 		},
 	}
 
 	expected := `From ???@??? Thu Jan  1 00:00:01 2015` + "\r" + `
-Date: Thu, 01 Jan 2015 00:00:01 +0100` + "\r" + `
-` + "\r" + `
+Date: Thu, 01 Jan 2015 00:00:01 +0100
+
 This is a simple test.
 
 And, by the way, this is how a "From" line is escaped in mboxo format:
@@ -58,8 +77,8 @@ And, by the way, this is how a "From" line is escaped in mboxo format:
 Bye.` + "\r" + `
 ` + "\r" + `
 From ???@??? Fri Jan  2 00:00:01 2015` + "\r" + `
-Date: Thu, 02 Jan 2015 00:00:01 +0100` + "\r" + `
-` + "\r" + `
+Date: Thu, 02 Jan 2015 00:00:01 +0100
+
 This is another simple test.
 
 Another line.

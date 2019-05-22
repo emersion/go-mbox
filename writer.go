@@ -1,84 +1,104 @@
 package mbox
 
 import (
+	"bytes"
 	"io"
-	"io/ioutil"
-	"net/mail"
-	"net/textproto"
-	"strings"
 	"time"
 )
 
-// Write a MIME header.
-func writeMIMEHeader(w io.Writer, header textproto.MIMEHeader) (N int, err error) {
-	var n int
+type messageWriter struct {
+	w io.Writer
+	buf bytes.Buffer
+}
 
-	for name, values := range header {
-		for _, value := range values {
-			n, err = io.WriteString(w, name+": "+value+"\r\n")
-			N += n
-			if err != nil {
-				return
-			}
+func (mw *messageWriter) writeLine(l []byte) (int, error) {
+	if bytes.HasPrefix(l, header) {
+		if _, err := mw.w.Write([]byte{'>'}); err != nil {
+			return 0, err
 		}
 	}
 
-	n, err = io.WriteString(w, "\r\n")
-	N += n
-	return
+	return mw.w.Write(l)
+}
+
+func (mw *messageWriter) Write(p []byte) (int, error) {
+	mw.buf.Write(p)
+	b := mw.buf.Bytes()
+	mw.buf.Reset()
+
+	N := 0
+	for {
+		i := bytes.IndexByte(b, '\n')
+		if i < 0 {
+			n, err := mw.buf.Write(b)
+			N += n
+			return N, err
+		}
+
+		var l []byte
+		l, b = b[:i+1], b[i+1:]
+
+		n, err := mw.writeLine(l)
+		N += n
+		if err != nil {
+			return N, err
+		}
+	}
+}
+
+func (mw *messageWriter) Close() error {
+	b := mw.buf.Bytes()
+	mw.buf.Reset()
+	if _, err := mw.writeLine(b); err != nil {
+		return err
+	}
+
+	_, err := mw.w.Write([]byte("\r\n\r\n"))
+	return err
 }
 
 // Writer writes messages to a mbox stream.
 type Writer struct {
 	w io.Writer
+	last *messageWriter
 }
 
 // NewWriter creates a new *Writer that writes messages to w.
 func NewWriter(w io.Writer) *Writer {
-	return &Writer{w}
+	return &Writer{w: w}
 }
 
-// WriteMessage writes a message to the mbox stream. It returns the number of
+// CreateMessage writes a message to the mbox stream. It returns the number of
 // bytes written.
-func (w *Writer) WriteMessage(m *mail.Message) (N int, err error) {
-	from := "???@???"
-	if fromList, err := m.Header.AddressList("From"); err == nil && len(fromList) > 0 {
-		from = fromList[0].Address
+func (w *Writer) CreateMessage(from string, t time.Time) (io.Writer, error) {
+	if w.last != nil {
+		if err := w.last.Close(); err != nil {
+			return nil, err
+		}
+		w.last = nil
 	}
 
-	date := ""
-	if t, err := m.Header.Date(); err == nil {
-		date = t.Format(time.ANSIC)
+	if from == "" {
+		from = "???@???"
 	}
+
+	if t.IsZero() {
+		t = time.Now()
+	}
+	date := t.Format(time.ANSIC)
 
 	line := "From " + from + " " + date + "\r\n"
-	n, err := io.WriteString(w.w, line)
-	N += n
-	if err != nil {
-		return
+	if _, err := io.WriteString(w.w, line); err != nil {
+		return nil, err
 	}
 
-	n, err = writeMIMEHeader(w.w, textproto.MIMEHeader(m.Header))
-	N += n
-	if err != nil {
-		return
-	}
+	w.last = &messageWriter{w: w.w}
+	return w.last, nil
+}
 
-	// Escape lines begining with "From "
-	// TODO: use golang.org/x/text/transform
-	b, err := ioutil.ReadAll(m.Body)
-	if err != nil {
-		return
+func (w *Writer) Close() error {
+	if w.last != nil {
+		return w.last.Close()
 	}
-
-	r := strings.NewReplacer("\nFrom ", "\n>From ")
-	n, err = r.WriteString(w.w, string(b))
-	N += n
-	if err != nil {
-		return
-	}
-
-	n, err = io.WriteString(w.w, "\r\n\r\n")
-	N += n
-	return
+	return nil
 }

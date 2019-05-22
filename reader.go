@@ -11,7 +11,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"net/mail"
 	"net/textproto"
 	"strings"
 )
@@ -21,7 +20,7 @@ import (
 // message.
 var ErrInvalidMboxFormat = errors.New("invalid mbox format")
 
-// scanMessage is a split function for a bufio.Scanner that returns a message in
+// scanMessage is a split function for a bufio.Reader that returns a message in
 // RFC 822 format or an error.
 func scanMessage(data []byte, atEOF bool) (int, []byte, error) {
 	if len(data) == 0 && atEOF {
@@ -92,78 +91,39 @@ func scanMessage(data []byte, atEOF bool) (int, []byte, error) {
 	return e + 1 + advanceExtra, data[n+1 : e], nil
 }
 
-// Scanner provides an interface to read a sequence of messages from an mbox.
-// Calling the Next method steps through the messages. The current message can
-// then be accessed by calling the Message method.
-//
-// The Next method returns true while there are messages to skip to and no error
-// occurs. When Next returns false, you can call the Err method to check for an
-// error.
-//
-// The Message method returns the current message as *mail.Message, or nil if an
-// error occured while calling Next or if you have skipped past the last message
-// using Next. If Next returned true, you can expect Message to return a valid
-// *mail.Message.
-type Scanner struct {
+type Reader struct {
 	s   *bufio.Scanner
-	m   *mail.Message
 	err error
 }
 
-// NewScanner returns a new *Scanner to read messages from mbox file format data
+// NewReader returns a new *Reader to read messages from mbox file format data
 // provided by io.Reader r.
-func NewScanner(r io.Reader) *Scanner {
+func NewReader(r io.Reader) *Reader {
 	s := bufio.NewScanner(r)
 	s.Split(scanMessage)
 
-	return &Scanner{s, nil, nil}
+	return &Reader{s, nil}
 }
 
 // Next skips to the next message and returns true. It will return false if
 // there are no messages left or an error occurs. You can call the Err method to
 // check if an error occured. If Next returns false and Err returns nil there
 // are no messages left.
-func (m *Scanner) Next() bool {
-	m.m = nil
-	if m.err != nil {
-		return false
-	}
-
+func (m *Reader) NextMessage() (io.Reader, error) {
 	if !m.s.Scan() {
-		m.err = m.s.Err()
-		return false
+		if err := m.s.Err(); err != nil {
+			return nil, err
+		}
+		return nil, io.EOF
 	}
 
-	m.m, m.err = mail.ReadMessage(bytes.NewBuffer(m.s.Bytes()))
-	if m.err != nil {
-		return false
-	}
-
-	return true
-}
-
-// Err returns the first error that occured while calling Next.
-func (m *Scanner) Err() error {
-	return m.err
-}
-
-// Message returns the current message. It returns nil if you never called Next,
-// skipped past the last message or if an error occured during a call to Next.
-//
-// If Next returned true, you can expect Message to return a valid
-// *mail.Message.
-func (m *Scanner) Message() *mail.Message {
-	if m.err != nil {
-		return nil
-	}
-
-	return m.m
+	return bytes.NewReader(m.s.Bytes()), nil
 }
 
 // Buffer sets the initial buffer to use when scanning and the maximum size of
 // buffer that may be allocated during scanning.
 //
 // Buffer panics if it is called after scanning has started.
-func (m *Scanner) Buffer(buf []byte, max int) {
+func (m *Reader) Buffer(buf []byte, max int) {
 	m.s.Buffer(buf, max)
 }

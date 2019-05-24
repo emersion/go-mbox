@@ -8,6 +8,3 @@ mbox files.
 # License
 
 MIT
-
-Forked from [blabber/mbox](https://github.com/blabber/mbox) which is released
-under the beer-ware license.

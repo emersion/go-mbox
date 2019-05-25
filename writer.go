@@ -57,19 +57,21 @@ func (mw *messageWriter) Close() error {
 	return err
 }
 
-// Writer writes messages to a mbox stream.
+// Writer writes messages to a mbox stream. The Close method must be called to
+// end the stream.
 type Writer struct {
 	w io.Writer
 	last *messageWriter
 }
 
-// NewWriter creates a new *Writer that writes messages to w.
+// NewWriter creates a new Writer that writes messages to w.
 func NewWriter(w io.Writer) *Writer {
 	return &Writer{w: w}
 }
 
-// CreateMessage writes a message to the mbox stream. It returns the number of
-// bytes written.
+// CreateMessage appends a message to the mbox stream. The message text
+// (including both the header and the body) should be written to the returned
+// io.Writer.
 func (w *Writer) CreateMessage(from string, t time.Time) (io.Writer, error) {
 	if w.last != nil {
 		if err := w.last.Close(); err != nil {

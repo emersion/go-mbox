@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-// ErrInvalidFormat is the error returned by the Next method of type Mbox if
+// ErrInvalidFormat is the error returned by the NextMessage method of Reader if
 // its content is malformed in a way that it is not possible to extract a
 // message.
 var ErrInvalidFormat = errors.New("invalid mbox format")
@@ -91,12 +91,13 @@ func scanMessage(data []byte, atEOF bool) (int, []byte, error) {
 	return e + 1 + advanceExtra, data[n+1 : e], nil
 }
 
+// Reader reads an mbox archive.
 type Reader struct {
 	s   *bufio.Scanner
 	err error
 }
 
-// NewReader returns a new *Reader to read messages from mbox file format data
+// NewReader returns a new Reader to read messages from mbox file format data
 // provided by io.Reader r.
 func NewReader(r io.Reader) *Reader {
 	s := bufio.NewScanner(r)
@@ -105,10 +106,8 @@ func NewReader(r io.Reader) *Reader {
 	return &Reader{s, nil}
 }
 
-// Next skips to the next message and returns true. It will return false if
-// there are no messages left or an error occurs. You can call the Err method to
-// check if an error occured. If Next returns false and Err returns nil there
-// are no messages left.
+// NextMessage returns the next message text (containing both the header and the
+// body). It will return io.EOF if there are no messages left.
 func (m *Reader) NextMessage() (io.Reader, error) {
 	if !m.s.Scan() {
 		if err := m.s.Err(); err != nil {

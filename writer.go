@@ -2,6 +2,7 @@ package mbox
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"time"
 )
@@ -62,6 +63,7 @@ func (mw *messageWriter) Close() error {
 type Writer struct {
 	w    io.Writer
 	last *messageWriter
+	closed bool
 }
 
 // NewWriter creates a new Writer that writes messages to w.
@@ -73,6 +75,9 @@ func NewWriter(w io.Writer) *Writer {
 // (including both the header and the body) should be written to the returned
 // io.Writer.
 func (w *Writer) CreateMessage(from string, t time.Time) (io.Writer, error) {
+	if w.closed {
+		return nil, errors.New("mbox: Writer.CreateMessage called after Close")
+	}
 	if w.last != nil {
 		if err := w.last.Close(); err != nil {
 			return nil, err
@@ -99,6 +104,10 @@ func (w *Writer) CreateMessage(from string, t time.Time) (io.Writer, error) {
 }
 
 func (w *Writer) Close() error {
+	if w.closed {
+		return errors.New("mbox: Writer already closed")
+	}
+	w.closed = true
 	if w.last != nil {
 		return w.last.Close()
 	}

@@ -7,7 +7,7 @@ import (
 )
 
 type messageWriter struct {
-	w io.Writer
+	w   io.Writer
 	buf bytes.Buffer
 }
 
@@ -60,7 +60,7 @@ func (mw *messageWriter) Close() error {
 // Writer writes messages to a mbox stream. The Close method must be called to
 // end the stream.
 type Writer struct {
-	w io.Writer
+	w    io.Writer
 	last *messageWriter
 }
 

@@ -61,8 +61,8 @@ func (mw *messageWriter) Close() error {
 // Writer writes messages to a mbox stream. The Close method must be called to
 // end the stream.
 type Writer struct {
-	w    io.Writer
-	last *messageWriter
+	w      io.Writer
+	last   *messageWriter
 	closed bool
 }
 

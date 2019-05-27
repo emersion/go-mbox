@@ -22,8 +22,8 @@ import (
 var ErrInvalidFormat = errors.New("invalid mbox format")
 
 type messageReader struct {
-	s *bufio.Scanner
-	next bytes.Buffer
+	s                  *bufio.Scanner
+	next               bytes.Buffer
 	atEOF, atSeparator bool
 }
 
@@ -81,7 +81,7 @@ func (mr *messageReader) Read(p []byte) (int, error) {
 
 // Reader reads an mbox archive.
 type Reader struct {
-	s *bufio.Scanner
+	s  *bufio.Scanner
 	mr *messageReader
 }
 

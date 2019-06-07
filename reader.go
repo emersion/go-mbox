@@ -12,8 +12,6 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-
-	"log"
 )
 
 // ErrInvalidFormat is the error returned by the NextMessage method of Reader if
@@ -29,7 +27,6 @@ type messageReader struct {
 
 func (mr *messageReader) readLine() ([]byte, error) {
 	if !mr.s.Scan() {
-		log.Println("EOF")
 		mr.atEOF = true
 		if err := mr.s.Err(); err != nil {
 			return nil, err

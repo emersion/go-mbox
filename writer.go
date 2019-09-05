@@ -39,7 +39,14 @@ func (mw *messageWriter) Write(p []byte) (int, error) {
 		var l []byte
 		l, b = b[:i+1], b[i+1:]
 
-		n, err := mw.writeLine(l)
+		n := len(l)
+		// Replace CRLF with LF
+		if len(l) > 1 && l[len(l)-2] == '\r' {
+			l = l[:len(l)-2]
+			l = append(l, '\n')
+		}
+
+		_, err := mw.writeLine(l)
 		N += n
 		if err != nil {
 			return N, err
@@ -54,7 +61,7 @@ func (mw *messageWriter) Close() error {
 		return err
 	}
 
-	_, err := mw.w.Write([]byte("\r\n\r\n"))
+	_, err := mw.w.Write([]byte("\n\n"))
 	return err
 }
 
@@ -94,7 +101,7 @@ func (w *Writer) CreateMessage(from string, t time.Time) (io.Writer, error) {
 	}
 	date := t.Format(time.ANSIC)
 
-	line := "From " + from + " " + date + "\r\n"
+	line := "From " + from + " " + date + "\n"
 	if _, err := io.WriteString(w.w, line); err != nil {
 		return nil, err
 	}

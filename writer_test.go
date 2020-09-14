@@ -65,7 +65,7 @@ Bye.`,
 		},
 	}
 
-	expected := `From ???@??? Thu Jan  1 00:00:01 2015
+	expected := `From ???@??? Wed Dec 31 23:00:01 2014
 Date: Thu, 01 Jan 2015 00:00:01 +0100
 
 This is a simple test.
@@ -76,7 +76,7 @@ And, by the way, this is how a "From" line is escaped in mboxo format:
 
 Bye.
 
-From ???@??? Fri Jan  2 00:00:01 2015
+From ???@??? Thu Jan  1 23:00:01 2015
 Date: Thu, 02 Jan 2015 00:00:01 +0100
 
 This is another simple test.

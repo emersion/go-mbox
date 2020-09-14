@@ -99,7 +99,7 @@ func (w *Writer) CreateMessage(from string, t time.Time) (io.Writer, error) {
 	if t.IsZero() {
 		t = time.Now()
 	}
-	date := t.Format(time.ANSIC)
+	date := t.UTC().Format(time.ANSIC)
 
 	line := "From " + from + " " + date + "\n"
 	if _, err := io.WriteString(w.w, line); err != nil {

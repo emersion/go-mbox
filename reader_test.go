@@ -423,6 +423,47 @@ Content-Transfer-Encoding: 8bit
 	}
 }
 
+func TestReadingMessageWithLongLine(t *testing.T) {
+	// We are testing longer line than what `bufio.MaxScanTokenSize` defines.
+	// RFC 5322 section 2.1.1 says line MUST be less than 998 bytes long, but
+	// some providers generates messages with such long lines.
+	want := strings.Repeat("This is very long line.", 5000) // Over 100k bytes.
+	mbox := fmt.Sprintf(`From herp.derp@example.com Thu Jan  1 00:00:01 2015
+From: herp.derp@example.com (Herp Derp)
+Date: Thu, 01 Jan 2015 00:00:01 +0100
+Subject: Test
+
+%s`, want)
+
+	b := bytes.NewBufferString(mbox)
+	m := NewReader(b)
+
+	r, err := m.NextMessage()
+	if err != nil {
+		t.Fatalf("m.NextMessaage() = %v", err)
+	}
+
+	msg, err := mail.ReadMessage(r)
+	if err != nil {
+		t.Fatalf("mail.ReadMessage() = %v", err)
+	}
+
+	var body bytes.Buffer
+	_, err = body.ReadFrom(msg.Body)
+	if err != nil {
+		t.Errorf("body.ReadFrom() = %v", err)
+	}
+
+	if body.String() != want+"\r\n" {
+		t.Errorf("Expected:\n %q\ngot\n%q", want, body.String())
+	}
+
+	_, err = m.NextMessage()
+	if err != io.EOF {
+		t.Fatalf("m.NextMessage() = %v", err)
+	}
+}
+
 func ExampleReader() {
 	r := strings.NewReader(`From herp.derp@example.com Thu Jan  1 00:00:01 2015
 From: herp.derp@example.com (Herp Derp)

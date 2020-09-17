@@ -4,4 +4,7 @@
 // common denominator, the so called mboxo format.
 package mbox
 
-var header = []byte("From ")
+var (
+	header        = []byte("From ")
+	escapedHeader = append([]byte{'>'}, header...)
+)

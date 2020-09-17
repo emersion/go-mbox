@@ -20,20 +20,10 @@ import (
 var ErrInvalidFormat = errors.New("invalid mbox format")
 
 type messageReader struct {
-	s                  *bufio.Scanner
+	r                  *bufio.Reader
 	next               bytes.Buffer
 	atEOF, atSeparator bool
-}
-
-func (mr *messageReader) readLine() ([]byte, error) {
-	if !mr.s.Scan() {
-		mr.atEOF = true
-		if err := mr.s.Err(); err != nil {
-			return nil, err
-		}
-		return nil, io.EOF
-	}
-	return mr.s.Bytes(), nil
+	atMiddleOfLine     bool
 }
 
 func (mr *messageReader) Read(p []byte) (int, error) {
@@ -42,35 +32,43 @@ func (mr *messageReader) Read(p []byte) (int, error) {
 	}
 
 	if mr.next.Len() == 0 {
-		b, err := mr.readLine()
+		b, isPrefix, err := mr.r.ReadLine()
 		if err != nil {
+			mr.atEOF = true
 			return 0, err
 		}
 
-		if bytes.HasPrefix(b, header) {
-			mr.atSeparator = true
-			return 0, io.EOF
-		} else if len(b) == 0 {
-			// Empty line, maybe the next one will contain a header
-			if b, err = mr.readLine(); err != nil {
-				return 0, err
-			}
-
+		if !mr.atMiddleOfLine {
 			if bytes.HasPrefix(b, header) {
 				mr.atSeparator = true
 				return 0, io.EOF
+			} else if len(b) == 0 {
+				// Check if the next line is separator. In such case the new
+				// line should not be written to not have double new line.
+				b, isPrefix, err = mr.r.ReadLine()
+				if err != nil {
+					mr.atEOF = true
+					return 0, err
+				}
+
+				if bytes.HasPrefix(b, header) {
+					mr.atSeparator = true
+					return 0, io.EOF
+				}
+
+				mr.next.Write([]byte("\r\n"))
 			}
 
-			mr.next.Write([]byte("\r\n"))
-		}
-
-		escapedHeader := append([]byte{'>'}, header...)
-		if len(b) > 0 && bytes.HasPrefix(b, escapedHeader) {
-			b = b[1:]
+			if bytes.HasPrefix(b, escapedHeader) {
+				b = b[1:]
+			}
 		}
 
 		mr.next.Write(b)
-		mr.next.Write([]byte("\r\n"))
+		if !isPrefix {
+			mr.next.Write([]byte("\r\n"))
+		}
+		mr.atMiddleOfLine = isPrefix
 	}
 
 	return mr.next.Read(p)
@@ -78,22 +76,32 @@ func (mr *messageReader) Read(p []byte) (int, error) {
 
 // Reader reads an mbox archive.
 type Reader struct {
-	s  *bufio.Scanner
+	r  *bufio.Reader
 	mr *messageReader
 }
 
 // NewReader returns a new Reader to read messages from mbox file format data
 // provided by io.Reader r.
 func NewReader(r io.Reader) *Reader {
-	return &Reader{s: bufio.NewScanner(r)}
+	return &Reader{r: bufio.NewReader(r)}
 }
 
 // NextMessage returns the next message text (containing both the header and the
 // body). It will return io.EOF if there are no messages left.
 func (r *Reader) NextMessage() (io.Reader, error) {
 	if r.mr == nil {
-		for r.s.Scan() {
-			b := r.s.Bytes()
+		for {
+			b, isPrefix, err := r.r.ReadLine()
+			if err != nil {
+				return nil, err
+			}
+			// Discard the rest of the line.
+			for isPrefix {
+				_, isPrefix, err = r.r.ReadLine()
+				if err != nil {
+					return nil, err
+				}
+			}
 			if len(b) == 0 {
 				continue
 			}
@@ -103,9 +111,6 @@ func (r *Reader) NextMessage() (io.Reader, error) {
 				return nil, ErrInvalidFormat
 			}
 		}
-		if err := r.s.Err(); err != nil {
-			return nil, err
-		}
 	} else {
 		if _, err := io.Copy(ioutil.Discard, r.mr); err != nil {
 			return nil, err
@@ -114,6 +119,6 @@ func (r *Reader) NextMessage() (io.Reader, error) {
 			return nil, io.EOF
 		}
 	}
-	r.mr = &messageReader{s: r.s}
+	r.mr = &messageReader{r: r.r}
 	return r.mr, nil
 }

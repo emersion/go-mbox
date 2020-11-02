@@ -1,0 +1,12 @@
+image: alpine/edge
+packages:
+  - go
+sources:
+  - https://github.com/emersion/go-mbox
+tasks:
+  - build: |
+      cd go-mbox
+      go build -v ./...
+  - test: |
+      cd go-mbox
+      go test -v ./...

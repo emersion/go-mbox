@@ -91,16 +91,9 @@ func NewReader(r io.Reader) *Reader {
 func (r *Reader) NextMessage() (io.Reader, error) {
 	if r.mr == nil {
 		for {
-			b, isPrefix, err := r.r.ReadLine()
+			b, err := r.r.ReadBytes('\n')
 			if err != nil {
 				return nil, err
-			}
-			// Discard the rest of the line.
-			for isPrefix {
-				_, isPrefix, err = r.r.ReadLine()
-				if err != nil {
-					return nil, err
-				}
 			}
 			if len(b) == 0 {
 				continue

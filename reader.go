@@ -95,7 +95,7 @@ func (r *Reader) NextMessage() (io.Reader, error) {
 			if err != nil {
 				return nil, err
 			}
-			if len(b) == 0 {
+			if len(b) <= 1 {
 				continue
 			}
 			if bytes.HasPrefix(b, header) {

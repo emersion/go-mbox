@@ -95,6 +95,9 @@ func (r *Reader) NextMessage() (io.Reader, error) {
 			if err != nil {
 				return nil, err
 			}
+			
+			isFromLine := bytes.HasPrefix(b, header)
+			
 			// Discard the rest of the line.
 			for isPrefix {
 				_, isPrefix, err = r.r.ReadLine()
@@ -105,7 +108,7 @@ func (r *Reader) NextMessage() (io.Reader, error) {
 			if len(b) == 0 {
 				continue
 			}
-			if bytes.HasPrefix(b, header) {
+			if isFromLine {
 				break
 			} else {
 				return nil, ErrInvalidFormat

@@ -23,35 +23,52 @@ func (mw *messageWriter) writeLine(l []byte) (int, error) {
 }
 
 func (mw *messageWriter) Write(p []byte) (int, error) {
+	// We will return the number of bytes *from p* that were written. Since
+	// we'll scan all the bytes already in the buffer before the write and
+	// those in p, we need to remember the initial buffer length.
+	initBufLen := mw.buf.Len()
+
 	mw.buf.Write(p)
 	b := mw.buf.Bytes()
 	mw.buf.Reset()
 
-	N := 0
+	var N int = 0
+	var err error
 	for {
+		var n int
 		i := bytes.IndexByte(b, '\n')
 		if i < 0 {
-			n, err := mw.buf.Write(b)
+			n, err = mw.buf.Write(b)
 			N += n
-			return N, err
+			break
 		}
 
 		var l []byte
 		l, b = b[:i+1], b[i+1:]
 
-		n := len(l)
 		// Replace CRLF with LF
+		replCRLF := false
 		if len(l) > 1 && l[len(l)-2] == '\r' {
 			l = l[:len(l)-2]
 			l = append(l, '\n')
+			replCRLF = true
 		}
 
-		_, err := mw.writeLine(l)
+		n, err = mw.writeLine(l)
+		if n == len(l) && replCRLF {
+			n++
+		}
 		N += n
 		if err != nil {
-			return N, err
+			break
 		}
 	}
+
+	N -= initBufLen
+	if N < 0 {
+		N = 0
+	}
+	return N, err
 }
 
 func (mw *messageWriter) Close() error {

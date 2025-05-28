@@ -92,3 +92,29 @@ Bye.
 		t.Error("Invalid mbox output:", s)
 	}
 }
+
+// Test for the fix for https://github.com/emersion/go-mbox/issues/21
+func TestMultipleWrites(t *testing.T) {
+	var buffer bytes.Buffer
+	mboxWriter := NewWriter(&buffer)
+	w, err := mboxWriter.CreateMessage("-", time.Time{})
+	if err != nil {
+		panic(err)
+	}
+	b := []byte("some text   ")
+	n, err := w.Write(b)
+	if n != 12 {
+		t.Errorf("unexpected return value for write: %d (expected %d)", n, 12)
+	}
+	if len(b) != 12 {
+		t.Errorf("buffer size after write: %d (expected %d)", len(b), 12)
+	}
+	b = []byte("end of line\n")
+	n, err = w.Write(b)
+	if n != 12 {
+		t.Errorf("unexpected return value for write: %d (expected %d)", n, 12)
+	}
+	if len(b) != 12 {
+		t.Errorf("buffer size after write: %d (expected %d)", len(b), 12)
+	}
+}

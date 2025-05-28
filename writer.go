@@ -23,11 +23,15 @@ func (mw *messageWriter) writeLine(l []byte) (int, error) {
 }
 
 func (mw *messageWriter) Write(p []byte) (int, error) {
+	// N will count the number of bytes *from p* that were written. Since we'll
+	// scan (and increment N for) all the bytes already in the buffer before
+	// the write and those in p, N should start at minus mw.buf.Len().
+	N := -mw.buf.Len()
+
 	mw.buf.Write(p)
 	b := mw.buf.Bytes()
 	mw.buf.Reset()
 
-	N := 0
 	for {
 		i := bytes.IndexByte(b, '\n')
 		if i < 0 {

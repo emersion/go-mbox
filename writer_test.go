@@ -94,7 +94,7 @@ Bye.
 }
 
 // Test for the fix for https://github.com/emersion/go-mbox/issues/21
-func TestMultipleWrites(t *testing.T) {
+func TestWriter_multipleWritesCount(t *testing.T) {
 	var buffer bytes.Buffer
 	mboxWriter := NewWriter(&buffer)
 	w, err := mboxWriter.CreateMessage("-", time.Time{})

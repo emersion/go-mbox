@@ -112,3 +112,18 @@ func TestWriter_multipleWritesCount(t *testing.T) {
 		t.Errorf("unexpected return value for write: %d (expected %d)", n, len(b))
 	}
 }
+
+func TestWriter_crlfCount(t *testing.T) {
+	var buffer bytes.Buffer
+	mboxWriter := NewWriter(&buffer)
+	w, err := mboxWriter.CreateMessage("-", time.Time{})
+	if err != nil {
+		panic(err)
+	}
+	// CRLF gets turned into LF, so one less byte than the input gets written
+	b := []byte("hello\r\nworld!")
+	n, err := w.Write(b)
+	if n != len(b) {
+		t.Errorf("Write() = %v, want %v", n, len(b))
+	}
+}
